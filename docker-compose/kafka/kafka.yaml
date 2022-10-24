@@ -1,0 +1,81 @@
+# from https://gist.github.com/roussi/6d3fd3cf48132824c1770cbb08d83a03
+version: '3.8'
+services:
+  zookeeper:
+    image: bitnami/zookeeper:3.8.0
+    container_name: zookeeper
+    restart: always
+    ports:
+      - "2181:2181"
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: yes
+    volumes:
+      - ./docker-data/zookeeper:/bitnami/zookeeper
+
+  kafka:
+    image: bitnami/kafka:3.3.1
+    container_name: kafka
+    restart: always
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: yes
+      KAFKA_ZOOKEEPER_PROTOCOL: PLAINTEXT
+
+      # most simple one
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: 'CLIENT:PLAINTEXT,INTERNAL:PLAINTEXT'
+      KAFKA_CFG_LISTENERS: 'INTERNAL://:9093,CLIENT://:9092'
+      KAFKA_CFG_ADVERTISED_LISTENERS: 'INTERNAL://kafka:9093,CLIENT://kafka:9092'
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: 'CLIENT'
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
+
+      # After a consumer group loses all its consumers (i.e. becomes empty) its offsets will be kept for
+      # this retention period before getting discarded. For standalone consumers (using manual assignment),
+      # offsets will be expired after the time of last commit plus this retention period.
+      # https://stackoverflow.com/a/54765350
+      # https://kafka.apache.org/documentation/#brokerconfigs_offsets.retention.minutes
+      # New default value is 7days (10080), old version 1 day (1440)
+      KAFKA_CFG_OFFSETS_RETENTION_MINUTES: 10080
+
+    volumes:
+      - ./docker-data/kafka:/bitnami/kafka
+
+  kafkaui:
+    # version https://github.com/provectus/kafka-ui/tree/v0.4.0
+    # see OpenAPI Doc here:
+    # https://github.com/provectus/kafka-ui/blob/v0.4.0/kafka-ui-contract/src/main/resources/swagger/kafka-ui-api.yaml
+    image: provectuslabs/kafka-ui:521ba0cb2f63110eb2ed13a7054a4d70238a862a
+    container_name: kafkaui
+    ports:
+      - "8080:8080"
+    restart: always
+    environment:
+      SERVER_SERVLET_CONTEXT_PATH: /
+      LOGGING_LEVEL_ROOT: trace
+      LOGGING_LEVEL_COM_PROVECTUS: trace
+      SERVER_PORT: 8080
+      KAFKA_ADMIN-CLIENT-TIMEOUT: 30000
+      TOPIC_RECREATE_DELAY_SECONDS: 1 # Time delay between topic deletion and topic creation attempts for topic recreate functionality. Default: 1
+      TOPIC_RECREATE_MAXRETRIES: 15 # Number of attempts of topic creation after topic deletion for topic recreate functionality. Default: 15
+
+      # https://github.com/provectus/kafka-ui/wiki/FAQ
+      # Then login using:
+      # curl -L -X POST 'http://localhost:8080/auth' -H 'Content-Type: application/x-www-form-urlencoded' --data-urlencode 'username=admin' --data-urlencode 'password=password'
+      # And then get cookies: https://github.com/provectus/kafka-ui/discussions/2459
+      # I.e:
+      # curl -v -L -X GET 'http://localhost:8080/api/clusters/local/topics' -H 'Cookie: SESSION=ac69ff52-aaaf-4f87-8003-ca786a7e465e'
+      AUTH_TYPE: "LOGIN_FORM"
+      SPRING_SECURITY_USER_NAME: admin
+      SPRING_SECURITY_USER_PASSWORD: password
+
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_DISABLELOGDIRSCOLLECTION: true
+
+    links:
+      - kafka

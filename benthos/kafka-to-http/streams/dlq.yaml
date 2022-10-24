@@ -1,0 +1,14 @@
+input:
+  resource: input_kafka_dlq
+output:
+  broker:
+    pattern: fan_out
+    outputs:
+      - resource: out_stdout
+        processors:
+          - resource: processor_stringify_data
+      - fallback:
+          - resource: out_http
+          - resource: out_stdout
+            processors:
+              - resource: processor_stringify_data

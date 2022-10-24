@@ -1,0 +1,32 @@
+output_resources:
+  - label: out_stdout
+    stdout:
+      codec: lines
+
+  - label: out_http
+    http_client:
+      url: ${HTTP_SERVICE_URL}
+      verb: POST
+      headers:
+        Benthos-Date: ${! now() }
+        Benthos-Hostname: ${! hostname() }
+        Benthos-Metadata: ${! meta() }
+      oauth2:
+        enabled: ${OAUTH2_ENABLED}
+        client_key: ${OAUTH2_CLIENT_KEY}
+        client_secret: ${OAUTH2_CLIENT_SECRET}
+        token_url: ${OAUTH2_TOKEN_URL}
+        scopes: ${OAUTH2_SCOPES:[]}
+      timeout: 30s
+      retry_period: 1s
+      max_retry_backoff: 5m0s
+      retries: 3
+      max_in_flight: 64
+
+  - label: out_kafka_topic_dlq
+    kafka:
+      addresses:
+        - ${KAFKA_BROKER_1}
+        - ${KAFKA_BROKER_2}
+        - ${KAFKA_BROKER_3}
+      topic: ${KAFKA_TOPIC_DLQ}

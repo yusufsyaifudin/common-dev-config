@@ -1,0 +1,21 @@
+input:
+  resource: input_kafka_primary
+output:
+  switch:
+    cases:
+      - check: errored()
+        output:
+          resource: out_stdout
+          processors:
+            - resource: processor_stringify_data
+      - output:
+          broker:
+            pattern: fan_out
+            outputs:
+              - resource: out_stdout
+              - fallback:
+                  - resource: out_es
+                  - resource: out_kafka_topic_dlq
+                  - resource: out_stdout
+                    processors:
+                      - resource: processor_stringify_data

@@ -1,0 +1,8 @@
+processor_resources:
+  - label: processor_stringify_data
+    bloblang: |2
+      let ctn = content().string()
+      root.error = error()
+      root.time = now()
+      root.meta = meta()
+      root.content = $ctn

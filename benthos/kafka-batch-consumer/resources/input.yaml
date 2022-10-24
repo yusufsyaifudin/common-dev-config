@@ -1,0 +1,37 @@
+input_resources:
+  - label: input_kafka
+    kafka:
+      addresses:
+        - ${KAFKA_BROKER_1}
+        - ${KAFKA_BROKER_2}
+        - ${KAFKA_BROKER_3}
+      topics:
+        - ${KAFKA_TOPIC}
+      consumer_group: ${KAFKA_CONSUMER_GROUP}
+      client_id: "mybenthos"
+      checkpoint_limit: 1024
+      # batch each 5s, per Kafka partition
+      batching:
+        count: 0
+        byte_size: 0
+        period: "5s"
+        check: ""
+        processors:
+          - log:
+              level: INFO
+              message: "Consumed Message"
+              fields_mapping: |
+                let ctn = content().string()
+                root.time = now()
+                root.meta = meta()
+                root.content = $ctn
+          - archive:
+              format: json_array
+          - log:
+              level: INFO
+              message: "Archived Message"
+              fields_mapping: |
+                let ctn = content().string()
+                root.time = now()
+                root.meta = meta()
+                root.content = $ctn

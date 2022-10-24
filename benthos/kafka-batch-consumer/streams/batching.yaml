@@ -1,0 +1,16 @@
+# https://v4.benthos.dev/docs/components/inputs/kafka
+# The Kafka input allows parallel processing of messages from different topic partitions,
+# but by default messages of the same topic partition are processed in lockstep in order to
+# enforce ordered processing.
+# This protection often means that batching messages at the output level can stall,
+# in which case it can be tuned by increasing the field checkpoint_limit,
+# ideally to a value greater than the number of messages you expect to batch.
+#
+# Alternatively, if you perform batching at the input level
+# using the batching field it is done per-partition and therefore avoids stalling.
+
+input:
+  resource: input_kafka
+
+output:
+  resource: out_stdout

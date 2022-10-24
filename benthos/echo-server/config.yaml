@@ -1,0 +1,41 @@
+http:
+  address: 0.0.0.0:4195
+  enabled: true
+  debug_endpoints: true
+
+logger:
+  level: ERROR
+  format: logfmt
+  add_timestamp: true
+  static_fields:
+    '@service': kafka-batching
+
+input:
+  label: "my_http_server"
+  http_server:
+    path: /post
+    allowed_verbs:
+      - POST
+    sync_response:
+      headers:
+        Content-Type: application/json
+
+pipeline:
+  processors:
+    # only preserve these key on headers:
+    # - http_server_remote_ip
+    # - http_server_request_path
+    # - http_server_user_agent
+    # - http_server_verb
+    - bloblang: |
+        root.request_header = meta().filter(!this.key.has_prefix("http_server"))
+        root.http_server = meta().filter(this.key.has_prefix("http_server"))
+        root.request_body = this
+
+output:
+  broker:
+    pattern: fan_out
+    outputs:
+      - stdout:
+          codec: lines
+      - sync_response: {}

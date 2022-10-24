@@ -1,0 +1,3 @@
+processor_resources:
+  - label: noop
+    noop: {}

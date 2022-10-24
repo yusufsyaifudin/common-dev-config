@@ -1,0 +1,85 @@
+# NOTE:
+# Jaeger currently not support ES version 8+ https://github.com/jaegertracing/jaeger/issues/3571
+
+version: '3.8'
+services:
+  jaeger_agent:
+    image: jaegertracing/jaeger-agent:1
+    container_name: jaeger_agent
+    command: [
+      # see https://www.jaegertracing.io/docs/1.21/deployment/#discovery-system-integration
+      # Using static list of hostnames and round-robin load balancing.
+      "--reporter.grpc.host-port=jaeger_collector:14250",
+      "--log-level=debug",
+    ]
+    ports:
+      - "6831:6831/udp"
+    restart: on-failure
+    depends_on:
+      - jaeger_collector
+
+  jaeger_collector:
+    image: jaegertracing/jaeger-collector:1
+    container_name: jaeger_collector
+    command: [
+      "--kafka.producer.brokers=${KAFKA_BROKER}",
+      "--kafka.producer.topic=jaeger-spans",
+      "--log-level=debug",
+      "--collector.otlp.enabled=true",
+    ]
+    ports:
+      - "9411"
+      - "14250" # gRPC, used by jaeger-agent to send spans in model.proto format
+      - "14268:14268" # HTTP can accept spans directly from clients in jaeger.thrift format over binary thrift protocol
+      - "14269:14269" # HTTP admin port: health check at / and metrics at /metrics
+      # accepts traces in OpenTelemetry OTLP format if --collector.otlp.enabled=true
+      - "4317:4317" # gRPC
+      - "4318:4318" # HTTP
+    environment:
+      SPAN_STORAGE_TYPE: "kafka"
+    restart: on-failure
+
+  jaeger_ingester:
+    image: jaegertracing/jaeger-ingester:1
+    container_name: jaeger_ingester
+    # https://github.com/jaegertracing/jaeger/issues/3571#issuecomment-1124926679
+    command: [
+      "--kafka.consumer.brokers=${KAFKA_BROKER}",
+      "--kafka.consumer.topic=jaeger-spans",
+      "--kafka.consumer.group-id=jaeger-ingester",
+      "--log-level=debug",
+      "--es.server-urls=${ES_URL}",
+      "--es.index-prefix=jaeger_",
+      "--es.version=7",
+      "--es.create-index-templates=true",
+    ]
+    ports:
+      - "14270" # admin port: health check at / and metrics at /metrics
+    environment:
+      SPAN_STORAGE_TYPE: "elasticsearch"
+    restart: on-failure
+
+  jaeger-query:
+    image: jaegertracing/jaeger-query:1
+    container_name: jaeger_query
+    command: [
+      "--es.server-urls=${ES_URL}",
+      "--es.index-prefix=jaeger_",
+      "--es.version=7",
+      "--es.create-index-templates=true",
+      "--span-storage.type=elasticsearch",
+      "--log-level=debug",
+      "--query.max-clock-skew-adjustment=0s",
+    ]
+    ports:
+      - "16686:16686"
+    restart: on-failure
+    environment:
+      SPAN_STORAGE_TYPE: "elasticsearch"
+
+      # see here https://github.com/jaegertracing/jaeger/issues/2083#issuecomment-590291890
+      # choose one collector to assign in this.
+      # this used for jaeger query UI to send jaeger-query tracing spans directly to the collector.
+      # or you can leave this empty to disable any tracing
+      JAEGER_DISABLED: "false"
+      JAEGER_ENDPOINT: "http://jaeger_collector:14268/api/traces"

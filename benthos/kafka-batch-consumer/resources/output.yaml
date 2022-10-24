@@ -1,0 +1,19 @@
+output_resources:
+  - label: out_stdout
+    stdout:
+      codec: lines
+
+  - label: out_http
+    http_client:
+      url: ${HTTP_SERVICE_URL}
+      verb: POST
+      headers:
+        Benthos-Date: ${! now() }
+        Benthos-Hostname: ${! hostname() }
+        Benthos-Metadata: ${! meta() }
+        Content-Type: application/json
+      timeout: 30s
+      retry_period: 1s
+      max_retry_backoff: 5m0s
+      retries: 3
+      max_in_flight: 64
