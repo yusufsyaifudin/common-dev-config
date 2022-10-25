@@ -10,6 +10,7 @@ services:
       - /resources/*.yaml
       - streams
       - /streams/*.yaml
+    env_file: .env
     ports:
       - "4195:4195"
     read_only: true
