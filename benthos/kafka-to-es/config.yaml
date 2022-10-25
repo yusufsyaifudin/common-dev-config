@@ -3,7 +3,7 @@ http:
   enabled: true
   debug_endpoints: true
 logger:
-  level: ALL
+  level: ERROR
   format: logfmt
   add_timestamp: true
   static_fields:

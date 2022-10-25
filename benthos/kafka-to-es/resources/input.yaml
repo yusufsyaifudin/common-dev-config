@@ -9,7 +9,7 @@ input_resources:
         - ${KAFKA_TOPIC}
       consumer_group: ${KAFKA_CONSUMER_GROUP}
       client_id: "mybenthos"
-      checkpoint_limit: 1
+      checkpoint_limit: 1024
 
   - label: input_kafka_dlq
     kafka:
