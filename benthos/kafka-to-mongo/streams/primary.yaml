@@ -15,9 +15,6 @@ output:
               - resource: out_stdout
                 processors:
                   - resource: processor_consumed
-              - resource: out_flock_webhook
-                processors:
-                  - resource: processor_flock_payload
               - fallback:
                   - resource: out_mongo
                   - resource: out_kafka_topic_dlq

@@ -3,6 +3,7 @@
 ## Features
 
 * [x] If persist to MongoDB failed -> go to another Kafka topic (DLQ)
+* [x] If DLQ queue still failed persist to MongoDB -> then trying to push in Flock as message (you can send it to another system as long as it has HTTP endpoint)
 
 ## Required Services
 
