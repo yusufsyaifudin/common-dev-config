@@ -20,6 +20,10 @@ This repository contains bunch of working example of using
   For example, you create Sign-Up service that once user register, you push the data to Kafka and then use Benthos
   to consume the data and post it to 3rd party service such as [SendGrid](https://docs.sendgrid.com/api-reference/mail-send/mail-send) or your homegrown service.
 
+* [x] [kafka-to-mongo](/benthos/kafka-to-mongo) Will consume message from Kafka topic and save to Mongo collection based on message published in Kafka payload.
+  This useful when you want create an audit log system: i.e: push all your business logic logs into Kafka then let Benthos save it into multiple collection based on payload.
+  For example, if it come from user A, it will go to collection A, and so on.
+
 * [ ] [add yours](#) Add more sample
 
 ## How to run

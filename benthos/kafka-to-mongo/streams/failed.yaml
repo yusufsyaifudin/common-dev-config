@@ -1,0 +1,25 @@
+input:
+  resource: input_kafka_dlq
+output:
+  switch:
+    cases:
+      - check: errored()
+        output:
+          resource: out_stdout
+          processors:
+            - resource: processor_consume_error
+      - output:
+          broker:
+            pattern: fan_out
+            outputs:
+              - resource: out_stdout
+                processors:
+                  - resource: processor_consumed
+              - fallback:
+                  - resource: out_mongo
+                  - resource: out_flock_webhook
+                    processors:
+                      - resource: processor_flock_payload
+                  - resource: out_stdout
+                    processors:
+                      - resource: processor_consume_error

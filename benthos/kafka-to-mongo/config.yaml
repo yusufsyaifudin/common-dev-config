@@ -1,0 +1,22 @@
+http:
+  address: 0.0.0.0:4195
+  enabled: true
+  debug_endpoints: true
+logger:
+  level: ERROR
+  format: logfmt
+  add_timestamp: true
+  static_fields:
+    '@service': kafka-to-es
+metrics:
+  mapping: |
+    meta service = "kafka-to-http"
+    root = "benthos_metric_" + this
+tracer:
+  jaeger:
+    agent_address: ${JAEGER_AGENT_URL}
+    collector_url: ${JAEGER_COLLECTOR_URL}
+    sampler_type: const
+    flush_interval: ""
+    tags:
+      service.name: my-service-benthos

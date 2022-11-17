@@ -1,0 +1,45 @@
+output_resources:
+  - label: out_stdout
+    stdout:
+      codec: lines
+
+  - label: out_kafka_topic_dlq
+    kafka:
+      addresses:
+        - ${KAFKA_BROKER_1}
+        - ${KAFKA_BROKER_2}
+        - ${KAFKA_BROKER_3}
+      topic: ${KAFKA_TOPIC_DLQ}
+
+  - label: out_mongo
+    mongodb:
+      url: ${MONGO_URL}
+      database: ${MONGO_DB}
+      username: ${MONGO_USERNAME}
+      password: ${MONGO_PASSWORD}
+      operation: insert-one
+      collection: '${! json("header.target_collection").catch("default_collection") }'
+      write_concern:
+        w: "majority" # W requests acknowledgement that write operations propagate to the specified number of mongodb instances.
+        j: false # J requests acknowledgement from MongoDB that write operations are written to the journal.
+        w_timeout: "3s"
+      document_map: |-
+        let raw_content = content().string()
+        root.metadata = meta()
+        root.header = json("header").catch($raw_content)
+        root.body = json("body").catch($raw_content)
+      filter_map: ""
+      hint_map: ""
+      upsert: false
+      max_in_flight: 64
+
+  - label: out_flock_webhook
+    http_client:
+      url: ${FLOCK_WEBHOOK_URL}
+      verb: POST
+      headers:
+        Content-Type: "application/json; charset=UTF-8"
+      timeout: 10s
+      retry_period: 1s
+      retries: 3
+      max_in_flight: 64

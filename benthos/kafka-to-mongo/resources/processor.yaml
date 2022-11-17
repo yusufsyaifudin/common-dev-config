@@ -1,0 +1,26 @@
+processor_resources:
+  - label: processor_consume_error
+    bloblang: |2
+      let ctn = content().string()
+      root._ = "error consumed at %s".format(now())
+      root.error = error()
+      root.time = now()
+      root.meta = meta()
+      root.content = json().catch($ctn)
+
+  - label: processor_consumed
+    bloblang: |2
+      let ctn = content().string()
+      root._ = "success consumed at %s".format(now())
+      root.content = json().catch($ctn)
+      root.meta = meta()
+
+  - label: processor_flock_payload
+    bloblang: |2
+      root.text = "[%s] Kafka topic (%s) partition (%v) offset (%v) is failed to process in DLQ published at %s".format(
+        now().ts_format(format: "2006-01-02T15:04:05Z07:00", tz: "Asia/Jakarta"),
+        meta("kafka_topic"),
+        meta("kafka_partition"),
+        meta("kafka_offset"),
+        meta("kafka_timestamp_unix")
+      )

@@ -77,5 +77,5 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
       KAFKA_CLUSTERS_0_DISABLELOGDIRSCOLLECTION: true
 
-    links:
+    depends_on:
       - kafka
