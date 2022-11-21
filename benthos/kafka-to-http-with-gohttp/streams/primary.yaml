@@ -1,0 +1,22 @@
+input:
+  resource: input_kafka_primary
+output:
+  switch:
+    cases:
+      - check: errored()
+        output:
+          resource: out_stdout
+          processors:
+            - resource: processor_stringify_data
+      - check: meta("kafka_topic") == "${KAFKA_TOPIC}"
+        output:
+          broker:
+            pattern: fan_out
+            outputs:
+              - resource: out_stdout
+              - fallback:
+                  - resource: out_http
+                  - resource: out_kafka_topic_dlq
+                  - resource: out_stdout
+                    processors:
+                      - resource: processor_stringify_data

@@ -1,0 +1,18 @@
+http:
+  address: 0.0.0.0:4195
+  enabled: true
+  debug_endpoints: true
+logger:
+  level: ERROR
+  format: logfmt
+  add_timestamp: true
+  static_fields:
+    '@service': kafka-to-http-with-gohttp
+metrics:
+  mapping: |
+    meta service = "kafka-to-http-with-gohttp"
+    root = "benthos_metric_" + this
+  statsd:
+    address: ${STATSD_AGENT_HOST}
+    flush_period: 100ms
+    tag_format: datadog

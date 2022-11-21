@@ -1,0 +1,23 @@
+input_resources:
+  - label: input_kafka_primary
+    kafka:
+      addresses:
+        - ${KAFKA_BROKER_1}
+        - ${KAFKA_BROKER_2}
+        - ${KAFKA_BROKER_3}
+      topics:
+        - ${KAFKA_TOPIC}
+      consumer_group: ${KAFKA_CONSUMER_GROUP}
+      client_id: "mybenthos"
+      checkpoint_limit: 1024
+
+  - label: input_kafka_dlq
+    kafka:
+      addresses:
+        - ${KAFKA_BROKER_1}
+        - ${KAFKA_BROKER_2}
+        - ${KAFKA_BROKER_3}
+      topics:
+        - ${KAFKA_TOPIC_DLQ}
+      consumer_group: ${KAFKA_CONSUMER_GROUP}
+      checkpoint_limit: 1024

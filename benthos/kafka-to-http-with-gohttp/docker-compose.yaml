@@ -1,0 +1,20 @@
+version: "3.8"
+services:
+  benthos_svc:
+    image: jeffail/benthos:4.6.0
+    restart: always
+    command:
+      - -c
+      - /config/config.yaml
+      - -r
+      - /resources/*.yaml
+      - streams
+      - /streams/*.yaml
+    env_file: .env
+    ports:
+      - "4195:4195"
+    read_only: true
+    volumes:
+      - "./config.yaml:/config/config.yaml"
+      - "./resources:/resources"
+      - "./streams:/streams"
