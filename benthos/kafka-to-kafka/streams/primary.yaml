@@ -1,0 +1,4 @@
+input:
+  resource: input_kafka
+output:
+  resource: out_kafka

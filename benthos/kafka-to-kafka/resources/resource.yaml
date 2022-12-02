@@ -1,0 +1,29 @@
+input_resources:
+  - label: input_kafka
+    kafka:
+      addresses:
+        - ${KAFKA_BROKER_1}
+        - ${KAFKA_BROKER_2}
+        - ${KAFKA_BROKER_3}
+      topics:
+        - ${KAFKA_TOPIC}
+      consumer_group: ${KAFKA_CONSUMER_GROUP}
+      client_id: "mybenthos"
+      checkpoint_limit: 1
+
+output_resources:
+  - label: out_kafka
+    kafka:
+      addresses:
+        - ${KAFKA_BROKER_1}
+        - ${KAFKA_BROKER_2}
+        - ${KAFKA_BROKER_3}
+      topic: ${KAFKA_TOPIC_OUT}
+
+    # send to      ${KAFKA_TOPIC}              -> {"retry": 16}
+    # then in this ${KAFKA_TOPIC_OUT} will get -> {"retry": 16}
+    # and the headers metadata will include key retry along with others Benthos metadata such as
+    # {"kafka_offset":"1","kafka_timestamp_unix":"1669975712","kafka_key":"","kafka_partition":"2","kafka_topic":"in_kafka","kafka_lag":"0"}
+    processors:
+      - mapping: |2
+          meta retry = json("retry").number().catch(1)
