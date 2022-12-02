@@ -27,3 +27,4 @@ output_resources:
     processors:
       - mapping: |2
           meta retry = json("retry").number().catch(1)
+          meta retry_header = meta("retry").number().catch(1)
