@@ -1,0 +1,48 @@
+input:
+  resource: in_file
+
+pipeline:
+  processors:
+    - resource: proc_http
+
+output:
+  switch:
+    retry_until_success: false
+    strict_mode: false
+    cases:
+      - check: errored()
+        output:
+          resource: out_stdout
+
+      # status_code here is not HTTP Code, but it is from response body.
+      # HTTP service will return response body JSON similar like this: {"status_code": "200"}
+      # so, we can get it by "this.status_code" where "this" represent that the response body expect always JSON formatted
+      - check: this.status_code == "200"
+        output:
+          resource: out_stdout
+          processors:
+            - mapping: |
+                root = this
+                root.message = "persist to DB because Success"
+      - check: this.status_code == "400"
+        output:
+          resource: out_stdout
+          processors:
+            - mapping: |
+                root = this
+                root.message = "go to Kafka because business logic error"
+      - check: this.status_code == "500"
+        output:
+          resource: out_stdout
+          processors:
+            - mapping: |
+                root = this
+                root.message = "go to some other output because System Error"
+
+      # default behavior if none check condition is meet
+      - output:
+          resource: out_stdout
+          processors:
+            - mapping: |
+                root = this
+                root.message = "unhandled response body"

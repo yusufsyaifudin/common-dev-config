@@ -1,0 +1,6 @@
+input_resources:
+  - label: "in_file"
+    file:
+      paths:
+        - input.txt
+      codec: lines
