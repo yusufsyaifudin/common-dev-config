@@ -1,0 +1,14 @@
+processor_resources:
+  - label: proc_http
+    http:
+      url: https://eo4drgqcm74v8i7.m.pipedream.net
+      verb: POST
+      headers:
+        Benthos-Date: ${! now() }
+        Benthos-Hostname: ${! hostname() }
+        Benthos-Metadata: ${! meta() }
+        Content-Type: application/json
+      timeout: 30s
+      retry_period: 1s
+      max_retry_backoff: 5m0s
+      retries: 3
