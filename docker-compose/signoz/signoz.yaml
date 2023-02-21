@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: bitnami/zookeeper:3.8
+    container_name: zookeeper
+    restart: always
+    ports:
+      - "2181:2181"
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: yes
+    volumes:
+      - ./docker-data/zookeeper:/bitnami/zookeeper
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:23-alpine
+    restart: on-failure
+    ports:
+      - "9000:9000"
+      - "8123:8123"
+      - "9181:9181"
+    tty: true
+    depends_on:
+      - zookeeper
+    logging:
+      options:
+        max-size: 50m
+        max-file: "3"
+    healthcheck:
+      # "clickhouse", "client", "-u ${CLICKHOUSE_USER}", "--password ${CLICKHOUSE_PASSWORD}", "-q 'SELECT 1'"
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      # configuration file
+      - ./config/clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml:ro
+      - ./config/clickhouse-config.xml:/etc/clickhouse-server/config.xml:ro
+      - ./config/clickhouse-users.xml:/etc/clickhouse-server/users.xml:ro
+      # persistent storage
+      - ./docker-data/clickhouse/:/var/lib/clickhouse/
+
+  query-service:
+    image: signoz/query-service:0.16.1-oss
+    container_name: query-service
+    command: [ "-config=/root/config/prometheus.yml" ]
+    ports:
+      - "6060:6060" # pprof port
+      - "8080:8080" # query-service port
+    volumes:
+      - ./config/prometheus.yml:/root/config/prometheus.yml
+      - ./docker-data/signoz/:/var/lib/signoz/
+    environment:
+      - ClickHouseUrl=tcp://clickhouse:9000/?database=signoz_traces
+      - ALERTMANAGER_API_PREFIX=http://alertmanager:9093/api/
+      - SIGNOZ_LOCAL_DB_PATH=/var/lib/signoz/signoz.db
+      - DASHBOARDS_PATH=/root/config/dashboards
+      - STORAGE=clickhouse
+      - GODEBUG=netdns=go
+      - TELEMETRY_ENABLED=true
+      - DEPLOYMENT_TYPE=docker-standalone-amd
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "localhost:8080/api/v1/version" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+
+  alertmanager:
+    image: signoz/alertmanager:0.23.0-0.2
+    container_name: alertmanager
+    volumes:
+      - ./docker-data/alertmanager:/data
+    depends_on:
+      query-service:
+        condition: service_healthy
+    restart: on-failure
+    command:
+      - --queryService.url=http://query-service:8080
+      - --storage.path=/data
+
+  frontend:
+    image: signoz/frontend:0.16.1
+    container_name: frontend
+    restart: on-failure
+    depends_on:
+      - alertmanager
+      - query-service
+    ports:
+      - "3301:3301"
+    volumes:
+      - ./config/nginx-config.conf:/etc/nginx/conf.d/default.conf:ro

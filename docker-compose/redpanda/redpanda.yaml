@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  redpanda:
+    image: redpandadata/redpanda:v22.3.13
+    container_name: redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+      - --pandaproxy-addr 0.0.0.0:8082
+      - --advertise-pandaproxy-addr localhost:8082
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+      - "9092:9092"
+      - "9644:9644"
+      - "29092:29092"
+    volumes:
+      - ./docker-data/redpanda:/var/lib/redpanda/data
+
+  kafkaui:
+    # version https://github.com/provectus/kafka-ui/tree/v0.4.0
+    # see OpenAPI Doc here:
+    # https://github.com/provectus/kafka-ui/blob/v0.4.0/kafka-ui-contract/src/main/resources/swagger/kafka-ui-api.yaml
+    image: provectuslabs/kafka-ui:521ba0cb2f63110eb2ed13a7054a4d70238a862a
+    container_name: kafkaui
+    ports:
+      - "8080:8080"
+    restart: always
+    environment:
+      SERVER_SERVLET_CONTEXT_PATH: /
+      LOGGING_LEVEL_ROOT: trace
+      LOGGING_LEVEL_COM_PROVECTUS: trace
+      SERVER_PORT: 8080
+      KAFKA_ADMIN-CLIENT-TIMEOUT: 30000
+      TOPIC_RECREATE_DELAY_SECONDS: 1 # Time delay between topic deletion and topic creation attempts for topic recreate functionality. Default: 1
+      TOPIC_RECREATE_MAXRETRIES: 15 # Number of attempts of topic creation after topic deletion for topic recreate functionality. Default: 15
+      AUTH_TYPE: "LOGIN_FORM"
+      SPRING_SECURITY_USER_NAME: admin
+      SPRING_SECURITY_USER_PASSWORD: password
+
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: redpanda:29092
+      KAFKA_CLUSTERS_0_DISABLELOGDIRSCOLLECTION: true
+
+    depends_on:
+      - redpanda
