@@ -1,0 +1,37 @@
+receivers:
+  # Data sources: traces, metrics, logs
+  otlp:
+    protocols:
+      grpc: {}
+      http:
+        cors:
+          allowed_origins:
+            - "http://*"
+            - "https://*"
+
+processors:
+  batch: {}
+
+exporters:
+  # Data sources: traces
+  jaeger:
+    endpoint: "jaeger:14250" # point to jaeger-agent to send spans in model.proto format.
+    tls:
+      insecure: true
+
+  # Data sources: traces, metrics, logs
+  logging:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # Data sources: traces, metrics, logs
+  file:
+    path: /tmp/log/otel-log.json
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [ batch ]
+      exporters: [jaeger, logging, file]
