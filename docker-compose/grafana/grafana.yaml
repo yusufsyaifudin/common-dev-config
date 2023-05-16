@@ -1,0 +1,21 @@
+# NOTE:
+version: '3.8'
+services:
+  grafana:
+    # default admin user credentials are admin/admin.
+    image: grafana/grafana-oss:9.4.7-ubuntu
+    container_name: grafana
+    command: []
+    environment:
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    ports:
+      - "6831:6831/udp"
+    restart: on-failure
+
+  loki:
+    image: grafana/loki:2.8.0-arm64
+    volumes:
+      - ./loki:/home/loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/home/loki/loki.yaml
