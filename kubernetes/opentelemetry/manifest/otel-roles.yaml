@@ -24,6 +24,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: otel-collector-account
+    namespace: otel-demo-ns  # This must be the same as spec.destination.namespace in argocd-app.yaml
 roleRef:
   kind: ClusterRole
   name: otel-collector-role
