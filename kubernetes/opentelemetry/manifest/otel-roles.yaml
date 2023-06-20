@@ -1,0 +1,30 @@
+# Here are the minimum permissions required to make the k8sattributesprocessor work.
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.79.0/exporter/datadogexporter/examples/k8s-chart/roles.yaml
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.79.0/exporter/datadogexporter/examples/k8s-chart/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector-account
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector-role
+rules:
+  - apiGroups: ["", "apps"]
+    resources: ["pods", "namespaces", "replicasets"]
+    verbs: ["get", "watch", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector-account
+roleRef:
+  kind: ClusterRole
+  name: otel-collector-role
+  apiGroup: rbac.authorization.k8s.io

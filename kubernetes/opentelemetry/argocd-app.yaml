@@ -1,0 +1,33 @@
+# OpenTelemetry Collector deployment as ArgoCD application
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: opentelemetry-collector
+  namespace: argocd # Change this to the namespace where ArgoCD is installed.
+spec:
+  project: otel-demo # Fill with ArgoCD project name.
+  source:
+    repoURL: git@github.com:yusufsyaifudin/common-dev-config.git
+    path: kubernetes/opentelemetry/manifest
+    targetRevision: HEAD # main branch
+  destination:
+    # Fill with target kubernetes cluster.
+    # Since we will deploy to the same cluster where the ArgoCD was installed,
+    # we can use Kubernetes internal domain.
+    # This works when we install for example in local machine using minikube.
+    server: https://kubernetes.default.svc
+    namespace: otel-demo-ns # Change this to the target namespace where the Deployment, Service, ConfigMap, etc will be created.
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PrunePropagationPolicy=background
+      - PruneLast=true
+    retry:
+      limit: 6
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
