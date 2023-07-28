@@ -1,0 +1,72 @@
+# NOTE:
+version: '3.8'
+services:
+  grafana:
+    # default admin user credentials are admin/admin.
+    image: grafana/grafana-oss:9.5.6-ubuntu
+    container_name: grafana
+    environment:
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    ports:
+      - "6831:6831/udp"
+      - "3000:3000"
+    restart: on-failure
+    volumes:
+      - ./docker-data/grafana-data:/var/lib/grafana
+    depends_on:
+      - loki-read
+
+  loki-write:
+    image: grafana/loki:2.8.3
+    container_name: loki-write
+    user: "10001:10001" # https://github.com/grafana/loki/issues/5513
+    volumes:
+      - ./config/loki/loki-write.yaml:/etc/loki/loki.yaml:ro
+      # - ./docker-data/loki-data-write/ingester:/loki # see ingester.wal
+      # - ./docker-data/loki-data-write/data:/data # see storage_config.tsdb_shipper.active_index_directory
+    ports:
+      - "3100:3100"
+      - "7946:7946"
+    command: "-config.file=/etc/loki/loki.yaml -target=write"
+    depends_on:
+      - minio
+
+  loki-read:
+    image: grafana/loki:2.8.3
+    container_name: loki-read
+    user: "10001:10001" # https://github.com/grafana/loki/issues/5513
+    volumes:
+      - ./config/loki/loki-read.yaml:/etc/loki/loki-read.yaml:ro
+      # - ./docker-data/loki-data-read/data:/data # see storage_config.tsdb_shipper.active_index_directory
+    command: "-config.file=/etc/loki/loki-read.yaml -target=read"
+    depends_on:
+      - minio
+
+  minio:
+    image: minio/minio:RELEASE.2023-07-18T17-49-40Z
+    container_name: minio
+    command: server /data --address ':9000' --console-address ':9001'
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ACCESS_KEY="minio-access-key"
+      - MINIO_SECRET_KEY="minio-secret-key"
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - ./docker-data/minio-data:/data
+
+#  createbuckets:
+#    image: minio/mc:RELEASE.2023-07-18T21-05-38Z
+#    container_name: createbuckets
+#    depends_on:
+#      - minio
+#    entrypoint: >
+#      /bin/sh -c "
+#      /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin;
+#      /usr/bin/mc rm -r --force myminio/loki;
+#      /usr/bin/mc mb myminio/loki;
+#      /usr/bin/mc policy set public myminio/loki;
+#      exit 0;
+#      "

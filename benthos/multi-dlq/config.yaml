@@ -1,0 +1,82 @@
+# Config
+http:
+  address: 0.0.0.0:4195
+  enabled: true
+  debug_endpoints: true
+logger:
+  level: ERROR
+  format: json
+  add_timestamp: true
+  static_fields:
+    '@service': multi-dlq
+metrics:
+  mapping: |
+    meta service = "multi-dlq"
+    root = "benthos_metric_" + this
+tracer:
+  jaeger:
+    agent_address: localhost:6831
+    collector_url: http://localhost:14268/api/traces
+    sampler_type: const
+    flush_interval: ""
+    tags:
+      service.name: benthos-multi-dlq
+
+# Resources
+input_resources:
+  - label: in_file
+    csv:
+      paths:
+        - "./file.csv"
+      parse_header_row: true
+      delimiter: ','
+      lazy_quotes: false
+
+processor_resources:
+  - label: usr_def_my_processor
+    mapping: |
+      root = this
+
+output_resources:
+  - label: log_stdout
+    stdout:
+      codec: lines
+  - label: out_primary_http_service
+    http_client:
+      url: https://example.com/not-exist-path
+      verb: POST
+      timeout: 30s
+      retry_period: 1s
+      max_retry_backoff: 5m0s
+      retries: 3
+      max_in_flight: 64
+  - label: out_dlq_redis
+    redis_list:
+      url: redis://localhost:6379
+      key: dlq-list
+      max_in_flight: 64
+  - label: out_dlq_file
+    file:
+      path: ./dlq.json
+      codec: lines
+
+# Stream direction
+input:
+  resource: in_file
+output:
+  broker:
+    pattern: fan_out
+    outputs:
+      - resource: log_stdout
+      - fallback:
+        - retry:
+            max_retries: 3
+            output:
+              resource: out_primary_http_service
+              processors:
+                - resource: usr_def_my_processor
+        - broker:
+            pattern: fan_out
+            outputs:
+              - resource: out_dlq_redis
+              - resource: out_dlq_file

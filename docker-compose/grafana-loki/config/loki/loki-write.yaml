@@ -1,0 +1,99 @@
+auth_enabled: false
+
+server:
+  http_listen_address: 0.0.0.0
+  grpc_listen_address: 0.0.0.0
+  http_listen_port: 3100
+  grpc_listen_port: 9095
+  log_level: debug
+
+# Common configuration to be shared between multiple modules.
+# If a more specific configuration is given in other sections,
+# the related configuration within this section will be ignored.
+common:
+  replication_factor: 1 # must be set number of minimum replication factor
+  path_prefix: /loki # Update this accordingly, data will be stored here.
+  ring:
+    kvstore:
+      store: memberlist
+
+memberlist:
+  advertise_port: 7946
+  join_members:
+    # You can use a headless k8s service for all distributor, ingester and querier components.
+    - loki-write:7946 # :7946 is the default memberlist port.
+    - loki-read:7946
+
+schema_config:
+  configs:
+    - from: 2020-05-15
+      store: tsdb
+      object_store: s3
+      schema: v12
+      index:
+        prefix: my-logs_
+        period: 24h
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /loki/index
+    cache_location: /loki/index_cache
+    shared_store: s3
+  aws:
+    s3: http://minioadmin:minioadmin@minio.:9000/loki
+    s3forcepathstyle: true
+    insecure: true
+    bucketnames: loki-data
+    access_key_id: "minio-access-key"
+    secret_access_key: "minio-secret-key"
+
+## ===== CONFIG FOR WRITE NODES ONLY
+
+limits_config:
+  unordered_writes: true
+
+compactor:
+  working_directory: /loki/compactor
+  shared_store: s3
+  compaction_interval: 5m
+
+ingester:
+  lifecycler:
+    join_after: 10s
+    observe_period: 5s
+    final_sleep: 0s
+  chunk_idle_period: 1m
+
+  # The ingester WAL (Write Ahead Log) records incoming logs and stores them on
+  # the local file systems in order to guarantee persistence of acknowledged data
+  # in the event of a process crash.
+  wal:
+    enabled: true
+    dir: /loki/wal
+    checkpoint_duration: 1m
+    flush_on_shutdown: true
+    replay_memory_ceiling: 4GB
+  max_chunk_age: 1m
+  chunk_retain_period: 30s
+  chunk_encoding: none # none, gzip, lz4-64k, snappy, lz4-256k, lz4-1M, lz4, flate, zstd
+  chunk_target_size: 1572864
+  chunk_block_size: 262144
+  flush_op_timeout: 10s
+
+ruler:
+  wal:
+    # The directory in which to write tenant WAL files. Each tenant will have its
+    # own directory one level below this directory. Default: "ruler-wal"
+    dir: ruler-wal
+    # Frequency with which to run the WAL truncation process.
+    # Default 1h
+    truncate_frequency: 1h
+    # Minimum age that samples must exist in the WAL before being truncated.
+    # Default: 5m
+    min_age: 5m
+    # Maximum age that samples must exist in the WAL before being truncated.
+    # Default: 4h
+    max_age: 4h
+  wal_cleaner:
+    min_age: 1m # The minimum age of a WAL to consider for cleaning. Default = 12h
+    period: 1s  # How often to run the WAL cleaner. 0 = disabled. Default = 0s
