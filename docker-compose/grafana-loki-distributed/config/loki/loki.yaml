@@ -1,0 +1,173 @@
+# Inspired from https://community.grafana.com/t/distributed-loki-troubleshooting-distributor-and-ingester-on-kubernetes/56109/2
+
+auth_enabled: true
+
+server:
+  http_listen_address: 0.0.0.0
+  grpc_listen_address: 0.0.0.0
+  http_listen_port: 3100
+  grpc_listen_port: 9095
+  log_level: debug
+
+# Common configuration to be shared between multiple modules.
+# If a more specific configuration is given in other sections,
+# the related configuration within this section will be ignored.
+common:
+  replication_factor: 1 # must be set number of minimum replication factor
+  path_prefix: /loki # Update this accordingly, data will be stored here.
+  ring:
+    kvstore:
+      store: memberlist
+  compactor_address: loki-compactor:9095
+
+limits_config:
+  unordered_writes: true
+
+memberlist:
+  advertise_port: 7946
+  join_members:
+    # You can use a headless k8s service for all distributor, ingester and querier components.
+    - loki-distributor:7946 # :7946 is the default memberlist port.
+    - loki-ingester:7946
+    - loki-query-frontend:7946
+    - loki-querier:7946
+    - loki-index-gateway:7946
+    - loki-compactor:7946
+
+schema_config:
+  configs:
+    - from: 2020-05-15
+      store: tsdb
+      object_store: s3
+      schema: v12
+      index:
+        prefix: my-logs_ # directory prefix in the object store when saving the index
+        period: 24h
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /loki/index
+    cache_location: /loki/index_cache
+    shared_store: s3
+    index_gateway_client:
+      server_address: loki-index-gateway:9095
+
+  aws:
+    s3: http://minioadmin:minioadmin@minio.:9000/loki
+    s3forcepathstyle: true
+    insecure: true
+    bucketnames: loki-data
+    access_key_id: "minio-access-key"
+    secret_access_key: "minio-secret-key"
+
+## ===== CONFIG FOR WRITE NODES ONLY
+
+ingester:
+  lifecycler:
+    join_after: 10s
+    observe_period: 5s
+    final_sleep: 0s
+
+  # The ingester WAL (Write Ahead Log) records incoming logs and stores them on
+  # the local file systems in order to guarantee persistence of acknowledged data
+  # in the event of a process crash.
+  wal:
+    enabled: true
+    dir: /loki/wal
+    checkpoint_duration: 5m
+    flush_on_shutdown: true
+    replay_memory_ceiling: 4GB
+
+  # How long chunks should sit in-memory with no updates before being flushed if
+  # they don't hit the max block size. This means that half-empty chunks will
+  # still be flushed after a certain period as long as they receive no further
+  # activity.
+  chunk_idle_period: 1m
+
+  # How long chunks should be retained in-memory after they've been flushed.
+  chunk_retain_period: 30s
+  chunk_encoding: none # none, gzip, lz4-64k, snappy, lz4-256k, lz4-1M, lz4, flate, zstd
+
+  # A target _compressed_ size in bytes for chunks. This is a desired size not an
+  # exact size, chunks may be slightly bigger or significantly smaller if they get
+  # flushed for other reasons (e.g. chunk_idle_period). A value of 0 creates
+  # chunks with a fixed 10 blocks, a non zero value will create chunks with a
+  # variable number of blocks to meet the target size.
+  # Default = 1572864 bytes = 1.5 MB
+  chunk_target_size: 1572864
+
+  # The targeted _uncompressed_ size in bytes of a chunk block When this threshold
+  # is exceeded the head block will be cut and compressed inside the chunk.
+  chunk_block_size: 262144
+  flush_op_timeout: 10s
+
+  # The maximum duration of a timeseries chunk in memory. If a timeseries runs for
+  # longer than this, the current chunk will be flushed to the store and a new
+  # chunk created.
+  max_chunk_age: 2h
+
+ruler:
+  wal:
+    # The directory in which to write tenant WAL files. Each tenant will have its
+    # own directory one level below this directory. Default: "ruler-wal"
+    dir: /loki/ruler-wal
+    # Frequency with which to run the WAL truncation process.
+    # Default 1h
+    truncate_frequency: 1h
+    # Minimum age that samples must exist in the WAL before being truncated.
+    # Default: 5m
+    min_age: 5m
+    # Maximum age that samples must exist in the WAL before being truncated.
+    # Default: 4h
+    max_age: 4h
+  wal_cleaner:
+    min_age: 5m # The minimum age of a WAL to consider for cleaning. Default = 12h
+    period: 30s  # How often to run the WAL cleaner. 0 = disabled. Default = 0s
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+
+## The BoltDB compactor service will run as part of the read target.
+# https://github.com/grafana/loki/blob/v2.8.3/docs/sources/fundamentals/architecture/deployment-modes/_index.md?plain=1#L62
+# Note: There should be only 1 compactor instance running at a time that
+# otherwise could create problems and may lead to data loss.
+compactor:
+  working_directory: /loki/compactor
+  shared_store: s3
+  compaction_interval: 5m
+
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 1h # 1year = 8760h
+
+## ===== CONFIG FOR READ REPLICA ONLY
+
+query_range:
+  # make queries more cache-able by aligning them with their step intervals
+  align_queries_with_step: true
+  max_retries: 5
+  parallelise_shardable_queries: true
+  cache_results: true
+
+frontend:
+  log_queries_longer_than: 5s
+  compress_responses: true
+  max_outstanding_per_tenant: 2048
+  tail_proxy_url: http://loki-querier:3100
+
+frontend_worker:
+  frontend_address: loki-query-frontend:9095
+
+query_scheduler:
+  # the TSDB index dispatches many more, but each individually smaller, requests.
+  # We increase the pending request queue sizes to compensate.
+  max_outstanding_requests_per_tenant: 32768
+
+querier:
+  # Each `querier` component process runs a number of parallel workers to process queries simultaneously.
+  # You may want to adjust this up or down depending on your resource usage
+  # (more available cpu and memory can tolerate higher values and vice versa),
+  # but we find the most success running at around `16` with tsdb
+  max_concurrent: 16
+  query_ingesters_within: 0

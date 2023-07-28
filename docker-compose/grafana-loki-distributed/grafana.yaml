@@ -1,0 +1,86 @@
+# NOTE: All loki component share the same config.
+
+version: '3.8'
+services:
+  grafana:
+    # default admin user credentials are admin/admin.
+    image: grafana/grafana-oss:9.5.6-ubuntu
+    container_name: grafana
+    environment:
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    ports:
+      - "6831:6831/udp"
+      - "3000:3000"
+    restart: on-failure
+    volumes:
+      - ./docker-data/grafana-data:/var/lib/grafana
+    depends_on:
+      - loki-query-frontend
+
+  loki-distributor:
+    image: grafana/loki:2.8.3
+    container_name: loki-distributor
+    user: "10001:10001"
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+    ports:
+      - "3100:3100"
+      - "7946:7946"
+    command: "-config.file=/etc/loki/loki.yaml -target=distributor"
+
+  loki-ingester:
+    image: grafana/loki:2.8.3
+    container_name: loki-ingester
+    user: "10001:10001"
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+    command: "-config.file=/etc/loki/loki.yaml -target=ingester"
+    depends_on:
+      - minio
+
+  loki-query-frontend:
+    image: grafana/loki:2.8.3
+    container_name: loki-query-frontend
+    user: "10001:10001"
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+    command: "-config.file=/etc/loki/loki.yaml -target=query-frontend"
+
+  loki-querier:
+    image: grafana/loki:2.8.3
+    container_name: loki-querier
+    user: "10001:10001"
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+    command: "-config.file=/etc/loki/loki.yaml -target=querier"
+
+  loki-index-gateway:
+    image: grafana/loki:2.8.3
+    container_name: loki-index-gateway
+    user: "10001:10001"
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+    command: "-config.file=/etc/loki/loki.yaml -target=index-gateway"
+
+  loki-compactor:
+    image: grafana/loki:2.8.3
+    container_name: loki-compactor
+    user: "10001:10001"
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+    command: "-config.file=/etc/loki/loki.yaml -target=compactor"
+
+  minio:
+    image: minio/minio:RELEASE.2023-07-18T17-49-40Z
+    container_name: minio
+    command: server /data --address ':9000' --console-address ':9001'
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ACCESS_KEY="minio-access-key"
+      - MINIO_SECRET_KEY="minio-secret-key"
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - ./docker-data/minio-data:/data
