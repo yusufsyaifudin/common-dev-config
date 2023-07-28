@@ -29,3 +29,5 @@ services:
         loki-url: "http://10.15.13.48:3100/loki/api/v1/push"
         loki-retries: 5
         loki-batch-size: 400
+        loki-tenant-id: "my-company-name" # Set the tenant id (http headerX-Scope-OrgID) when sending logs to Loki. It can be overridden by a pipeline stage.
+        loki-external-labels: service=app_service,owner=john,environment=development

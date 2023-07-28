@@ -1,4 +1,4 @@
-auth_enabled: false
+auth_enabled: true
 
 server:
   http_listen_address: 0.0.0.0
@@ -16,6 +16,9 @@ common:
   ring:
     kvstore:
       store: memberlist
+
+limits_config:
+  unordered_writes: true
 
 memberlist:
   advertise_port: 7946
@@ -49,20 +52,11 @@ storage_config:
 
 ## ===== CONFIG FOR WRITE NODES ONLY
 
-limits_config:
-  unordered_writes: true
-
-compactor:
-  working_directory: /loki/compactor
-  shared_store: s3
-  compaction_interval: 5m
-
 ingester:
   lifecycler:
     join_after: 10s
     observe_period: 5s
     final_sleep: 0s
-  chunk_idle_period: 1m
 
   # The ingester WAL (Write Ahead Log) records incoming logs and stores them on
   # the local file systems in order to guarantee persistence of acknowledged data
@@ -70,21 +64,43 @@ ingester:
   wal:
     enabled: true
     dir: /loki/wal
-    checkpoint_duration: 1m
+    checkpoint_duration: 5m
     flush_on_shutdown: true
     replay_memory_ceiling: 4GB
-  max_chunk_age: 1m
+
+  # How long chunks should sit in-memory with no updates before being flushed if
+  # they don't hit the max block size. This means that half-empty chunks will
+  # still be flushed after a certain period as long as they receive no further
+  # activity.
+  chunk_idle_period: 1m
+
+  # How long chunks should be retained in-memory after they've been flushed.
   chunk_retain_period: 30s
   chunk_encoding: none # none, gzip, lz4-64k, snappy, lz4-256k, lz4-1M, lz4, flate, zstd
+
+  # A target _compressed_ size in bytes for chunks. This is a desired size not an
+  # exact size, chunks may be slightly bigger or significantly smaller if they get
+  # flushed for other reasons (e.g. chunk_idle_period). A value of 0 creates
+  # chunks with a fixed 10 blocks, a non zero value will create chunks with a
+  # variable number of blocks to meet the target size.
+  # Default = 1572864 bytes = 1.5 MB
   chunk_target_size: 1572864
+
+  # The targeted _uncompressed_ size in bytes of a chunk block When this threshold
+  # is exceeded the head block will be cut and compressed inside the chunk.
   chunk_block_size: 262144
   flush_op_timeout: 10s
+
+  # The maximum duration of a timeseries chunk in memory. If a timeseries runs for
+  # longer than this, the current chunk will be flushed to the store and a new
+  # chunk created.
+  max_chunk_age: 2h
 
 ruler:
   wal:
     # The directory in which to write tenant WAL files. Each tenant will have its
     # own directory one level below this directory. Default: "ruler-wal"
-    dir: ruler-wal
+    dir: /loki/ruler-wal
     # Frequency with which to run the WAL truncation process.
     # Default 1h
     truncate_frequency: 1h
@@ -95,5 +111,13 @@ ruler:
     # Default: 4h
     max_age: 4h
   wal_cleaner:
-    min_age: 1m # The minimum age of a WAL to consider for cleaning. Default = 12h
-    period: 1s  # How often to run the WAL cleaner. 0 = disabled. Default = 0s
+    min_age: 5m # The minimum age of a WAL to consider for cleaning. Default = 12h
+    period: 30s  # How often to run the WAL cleaner. 0 = disabled. Default = 0s
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 1h # 1year = 8760h
