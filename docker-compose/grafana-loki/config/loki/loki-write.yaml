@@ -76,7 +76,7 @@ ingester:
 
   # How long chunks should be retained in-memory after they've been flushed.
   chunk_retain_period: 30s
-  chunk_encoding: none # none, gzip, lz4-64k, snappy, lz4-256k, lz4-1M, lz4, flate, zstd
+  chunk_encoding: gzip # none, gzip, lz4-64k, snappy, lz4-256k, lz4-1M, lz4, flate, zstd. Default: gzip
 
   # A target _compressed_ size in bytes for chunks. This is a desired size not an
   # exact size, chunks may be slightly bigger or significantly smaller if they get

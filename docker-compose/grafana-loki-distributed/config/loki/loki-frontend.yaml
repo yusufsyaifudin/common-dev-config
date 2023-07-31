@@ -1,0 +1,57 @@
+# see https://github.com/grafana/loki/blob/v2.8.3/docs/sources/configuration/query-frontend.md
+
+# https://github.com/grafana/loki/blob/v2.8.3/docs/sources/fundamentals/architecture/components/_index.md#query-frontend
+# Query frontends are stateless. However, due to how the internal queue works,
+# it's recommended to run a few query frontend replicas to reap the benefit of fair scheduling.
+# Two replicas should suffice in most cases.
+auth_enabled: true
+
+server:
+  http_listen_address: 0.0.0.0
+  grpc_listen_address: 0.0.0.0
+  http_listen_port: 3100
+  grpc_listen_port: 9095
+  log_level: debug
+
+common:
+  compactor_address: loki-compactor:9095
+
+limits_config:
+  unordered_writes: true
+  split_queries_by_interval: 1h
+
+schema_config:
+  configs:
+    - from: 2020-05-15
+      store: tsdb
+      object_store: s3
+      schema: v12
+      index:
+        prefix: my-logs_ # directory prefix in the object store when saving the index
+        period: 24h
+
+## ===== CONFIG FOR FRONT-END ONLY
+query_range:
+  # make queries more cache-able by aligning them with their step intervals
+  align_queries_with_step: true
+  max_retries: 5
+  parallelise_shardable_queries: true
+  cache_results: true
+  results_cache:
+    cache:
+      # We're going to use the in-process "FIFO" cache
+      enable_fifocache: true
+      fifocache:
+        size: 1024
+        validity: 24h
+
+frontend:
+  log_queries_longer_than: 5s
+  compress_responses: true
+  max_outstanding_per_tenant: 2048
+  scheduler_address: loki-query-scheduler:9095
+  downstream_url: http://loki-querier:3100
+  tail_proxy_url: http://loki-querier:3100
+
+frontend_worker:
+  frontend_address: loki-query-frontend:9095

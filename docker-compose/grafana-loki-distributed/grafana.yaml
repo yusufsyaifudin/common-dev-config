@@ -17,6 +17,16 @@ services:
     depends_on:
       - loki-query-frontend
 
+  loki-ingester:
+    image: grafana/loki:2.8.3
+    container_name: loki-ingester
+    user: "10001:10001"
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+    command: "-config.file=/etc/loki/loki.yaml -target=ingester"
+    depends_on:
+      - minio
+
   loki-distributor:
     image: grafana/loki:2.8.3
     container_name: loki-distributor
@@ -28,23 +38,21 @@ services:
       - "7946:7946"
     command: "-config.file=/etc/loki/loki.yaml -target=distributor"
 
-  loki-ingester:
-    image: grafana/loki:2.8.3
-    container_name: loki-ingester
-    user: "10001:10001"
-    volumes:
-      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
-    command: "-config.file=/etc/loki/loki.yaml -target=ingester"
-    depends_on:
-      - minio
-
   loki-query-frontend:
     image: grafana/loki:2.8.3
     container_name: loki-query-frontend
     user: "10001:10001"
     volumes:
-      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./config/loki/loki-frontend.yaml:/etc/loki/loki.yaml:ro
     command: "-config.file=/etc/loki/loki.yaml -target=query-frontend"
+
+  loki-query-scheduler:
+    image: grafana/loki:2.8.3
+    container_name: loki-query-scheduler
+    user: "10001:10001"
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+    command: "-config.file=/etc/loki/loki.yaml -target=query-scheduler"
 
   loki-querier:
     image: grafana/loki:2.8.3
@@ -61,6 +69,14 @@ services:
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
     command: "-config.file=/etc/loki/loki.yaml -target=index-gateway"
+
+  loki-ruler:
+    image: grafana/loki:2.8.3
+    container_name: loki-ruler
+    user: "10001:10001"
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+    command: "-config.file=/etc/loki/loki.yaml -target=ruler"
 
   loki-compactor:
     image: grafana/loki:2.8.3
