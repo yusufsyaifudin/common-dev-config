@@ -21,11 +21,11 @@ server:
 # the related configuration within this section will be ignored.
 common:
   replication_factor: 1 # must be set number of minimum replication factor
-  path_prefix: /loki # Update this accordingly, data will be stored here.
+  path_prefix: /data # Update this accordingly, data will be stored here.
   ring:
     kvstore:
       store: memberlist
-  compactor_address: loki-compactor:9095
+  compactor_grpc_address: loki-compactor:9095
 
 limits_config:
   unordered_writes: true
@@ -59,8 +59,8 @@ schema_config:
 
 storage_config:
   tsdb_shipper:
-    active_index_directory: /loki/index
-    cache_location: /loki/index_cache
+    active_index_directory: /data/tsdb/index
+    cache_location: /data/tsdb/index_cache
     shared_store: s3
     index_gateway_client:
       server_address: loki-index-gateway:9095
@@ -86,7 +86,7 @@ ingester:
   # in the event of a process crash.
   wal:
     enabled: true
-    dir: /loki/wal
+    dir: /data/ingester-wal
     checkpoint_duration: 5m
     flush_on_shutdown: true
     replay_memory_ceiling: 4GB
@@ -123,7 +123,7 @@ ruler:
   wal:
     # The directory in which to write tenant WAL files. Each tenant will have its
     # own directory one level below this directory. Default: "ruler-wal"
-    dir: /loki/ruler-wal
+    dir: /data/ruler-wal
     # Frequency with which to run the WAL truncation process.
     # Default 1h
     truncate_frequency: 1h
@@ -139,7 +139,7 @@ ruler:
   storage:
     type: local
     local:
-      directory: /loki/rules
+      directory: /data/ruler-dir
 
 ## ===== CONFIG FOR READ REPLICA ONLY (Query scheduler, querier and compactor)
 
@@ -162,7 +162,7 @@ querier:
 # Note: There should be only 1 compactor instance running at a time that
 # otherwise could create problems and may lead to data loss.
 compactor:
-  working_directory: /loki/compactor
+  working_directory: /data/compactor-dir
   shared_store: s3
   compaction_interval: 5m
 

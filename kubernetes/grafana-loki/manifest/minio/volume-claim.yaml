@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-volume-claim
+  labels:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/part-of: minio
+spec:
+  accessModes:
+    # - ReadWriteMany # the volume can be mounted as read-write by many nodes.
+    - ReadWriteOnce # the volume can be mounted as read-write by a single node. ReadWriteOnce access mode still can allow multiple pods to access the volume when the pods are running on the same node.
+    # - ReadOnlyMany # the volume can be mounted as read-only by many nodes.
+  resources:
+    requests:
+      storage: 1Gi

@@ -1,0 +1,96 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  labels:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/part-of: minio
+spec:
+  replicas: 3
+  podManagementPolicy: Parallel
+  updateStrategy:
+    rollingUpdate:
+      # When you changed the partition,
+      # the StatefulSet controller automatically updated the web-2 Pod
+      # because the Pod's ordinal was greater than or equal to the partition.
+      # https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/#rolling-out-a-canary
+      partition: 0
+
+  # serviceName is the name of the service that governs this StatefulSet.
+  # This service must exist before the StatefulSet, and is responsible
+  # for the network identity of the set. Pods get DNS/hostnames
+  # that follow the pattern: pod-specific-string.serviceName.default.svc.cluster.local
+  # where "pod-specific-string" is managed by the StatefulSet controller.
+  serviceName: minio
+
+  # You can set .spec.revisionHistoryLimit field in a Deployment
+  # to specify how many old ReplicaSets for this Deployment you want to retain.
+  # The rest will be garbage-collected in the background. By default, it is 10.
+  revisionHistoryLimit: 10
+
+  # Data on the write nodes is easy to replace, so we want to always delete PVCs to make
+  # operation easier, and will rely on re-fetching data when needed.
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minio
+      app.kubernetes.io/part-of: minio
+  template:
+    metadata:
+      name: minio
+      labels:
+        app.kubernetes.io/name: minio
+        app.kubernetes.io/part-of: minio
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: minio
+          image: minio/minio:RELEASE.2023-07-18T17-49-40Z
+          command:
+            - minio
+            - server
+            - /data
+            - --address
+            - ':9000'
+            - --console-address
+            - ':9001'
+          ports:
+            - name: s3-api
+              containerPort: 9000
+              hostPort: 9000
+              protocol: TCP
+            - name: dashboard
+              containerPort: 9001
+              hostPort: 9001
+              protocol: TCP
+          volumeMounts:
+            - name: minio-volume-data
+              mountPath: /data
+          envFrom:
+            - configMapRef:
+                name: minio-env
+          resources:
+            limits:
+              cpu: 200m
+              memory: 500Mi
+            requests:
+              cpu: 200m
+              memory: 500Mi
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+      terminationGracePeriodSeconds: 60
+      volumes:
+        - name: minio-volume-data
+          persistentVolumeClaim:
+            claimName: minio-volume-claim

@@ -17,17 +17,18 @@ services:
     depends_on:
       - loki-query-frontend
 
-  loki-ingester:
+  loki-ingester: # stateful
     image: grafana/loki:2.8.3
     container_name: loki-ingester
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./docker-data/loki-ingester/data:/data # see common.path_prefix, ingester.wal.dir, storage_config.tsdb_shipper.active_index_directory
     command: "-config.file=/etc/loki/loki.yaml -target=ingester"
     depends_on:
       - minio
 
-  loki-distributor:
+  loki-distributor: # stateless
     image: grafana/loki:2.8.3
     container_name: loki-distributor
     user: "10001:10001"
@@ -38,7 +39,7 @@ services:
       - "7946:7946"
     command: "-config.file=/etc/loki/loki.yaml -target=distributor"
 
-  loki-query-frontend:
+  loki-query-frontend: # stateless
     image: grafana/loki:2.8.3
     container_name: loki-query-frontend
     user: "10001:10001"
@@ -46,7 +47,10 @@ services:
       - ./config/loki/loki-frontend.yaml:/etc/loki/loki.yaml:ro
     command: "-config.file=/etc/loki/loki.yaml -target=query-frontend"
 
-  loki-query-scheduler:
+  # assume stateless, because in this example it uses Keda and using Deployment instead StatefulSet
+  # https://github.com/grafana/loki/blob/v2.8.3/docs/sources/operations/autoscaling_queriers.md?plain=1#L109
+  # So
+  loki-query-scheduler: # stateless
     image: grafana/loki:2.8.3
     container_name: loki-query-scheduler
     user: "10001:10001"
@@ -76,6 +80,7 @@ services:
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./docker-data/loki-ruler/data:/data # see common.path_prefix, ruler.wal.dir, ruler.storage.local.directory
     command: "-config.file=/etc/loki/loki.yaml -target=ruler"
 
   loki-compactor:
@@ -84,6 +89,7 @@ services:
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./docker-data/loki-compactor/data:/data # see compactor.working_directory
     command: "-config.file=/etc/loki/loki.yaml -target=compactor"
 
   minio:

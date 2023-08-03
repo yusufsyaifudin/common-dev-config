@@ -1,0 +1,29 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki-index-gateway
+  labels:
+    app.kubernetes.io/name: grafana-loki-index-gateway
+    app.kubernetes.io/part-of: grafana-loki
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3100"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3100
+      protocol: TCP
+      name: http-metrics
+      targetPort: http-metrics
+    - port: 9095
+      protocol: TCP
+      name: grpc
+      targetPort: grpc
+    - port: 7946
+      protocol: TCP
+      name: http-memberlist
+      targetPort: http-memberlist
+  selector:
+    app.kubernetes.io/name: grafana-loki-index-gateway
+    app.kubernetes.io/part-of: grafana-loki

@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki-query-frontend
+  labels:
+    app.kubernetes.io/name: grafana-loki-query-frontend
+    app.kubernetes.io/part-of: grafana-loki
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana-loki-query-frontend
+      app.kubernetes.io/part-of: grafana-loki
+  strategy: {}
+  template:
+    metadata:
+      name: loki-distributor
+      labels:
+        app.kubernetes.io/name: grafana-loki-query-frontend
+        app.kubernetes.io/part-of: grafana-loki
+    spec:
+      containers:
+        - name: query-frontend
+          image: grafana/loki:2.8.3
+          imagePullPolicy: Always
+          args:
+            - -config.file=/etc/loki/config/config.yaml
+            - -target=query-frontend
+          volumeMounts:
+            - name: config
+              mountPath: /etc/loki/config
+              readOnly: true
+          ports:
+            - name: http-metrics
+              containerPort: 3100
+              protocol: TCP
+            - name: grpc
+              containerPort: 9095
+              protocol: TCP
+            - name: http-memberlist
+              containerPort: 7946
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http-metrics
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http-metrics
+            initialDelaySeconds: 30
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 200m
+              memory: 200Mi
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      volumes:
+        - name: config
+          configMap:
+            name: loki-config
+            defaultMode: 0755

@@ -1,0 +1,110 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki-ingester
+  labels:
+    app.kubernetes.io/name: grafana-loki-ingester
+    app.kubernetes.io/part-of: grafana-loki
+spec:
+  replicas: 3
+  podManagementPolicy: Parallel
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+
+  serviceName: loki-ingester
+
+  # You can set .spec.revisionHistoryLimit field in a Deployment
+  # to specify how many old ReplicaSets for this Deployment you want to retain.
+  # The rest will be garbage-collected in the background. By default, it is 10.
+  revisionHistoryLimit: 10
+
+  # Data on the write nodes is easy to replace, so we want to always delete PVCs to make
+  # operation easier, and will rely on re-fetching data when needed.
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana-loki-ingester
+      app.kubernetes.io/part-of: grafana-loki
+  template:
+    metadata:
+      name: loki-ingester
+      labels:
+        app.kubernetes.io/name: grafana-loki-ingester
+        app.kubernetes.io/part-of: grafana-loki
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsGroup: 10001
+        runAsUser: 10001
+      containers:
+        - name: ingester
+          image: grafana/loki:2.8.3
+          imagePullPolicy: IfNotPresent
+          args:
+            - -config.file=/etc/loki/config/config.yaml
+            - -target=ingester
+          ports:
+            - name: http-metrics
+              containerPort: 3100
+              protocol: TCP
+            - name: grpc
+              containerPort: 9095
+              protocol: TCP
+            - name: http-memberlist
+              containerPort: 7946
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/loki/config
+              readOnly: true
+
+            # mount all storage path.
+            # since all ingester will mount under /data, we only need to specify one
+            - name: storage
+              mountPath: "/data"
+              subPath: data
+              readOnly: false
+
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http-metrics
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http-metrics
+            initialDelaySeconds: 30
+
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 200Mi
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+
+      terminationGracePeriodSeconds: 60
+      volumes:
+        - name: config
+          configMap:
+            name: loki-config
+            defaultMode: 0755
+        - name: storage
+          persistentVolumeClaim:
+            claimName: loki-compactor-volume-claim
