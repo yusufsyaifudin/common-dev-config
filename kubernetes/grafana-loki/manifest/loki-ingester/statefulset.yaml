@@ -105,6 +105,16 @@ spec:
           configMap:
             name: loki-config
             defaultMode: 0755
-        - name: storage
-          persistentVolumeClaim:
-            claimName: loki-compactor-volume-claim
+
+  volumeClaimTemplates:
+    - metadata:
+        name: storage
+        labels:
+          app.kubernetes.io/name: grafana-loki-ingester
+          app.kubernetes.io/part-of: grafana-loki
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
