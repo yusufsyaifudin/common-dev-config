@@ -23,8 +23,8 @@ spec:
   # Data on the write nodes is easy to replace, so we want to always delete PVCs to make
   # operation easier, and will rely on re-fetching data when needed.
   persistentVolumeClaimRetentionPolicy:
-    whenDeleted: Retain
-    whenScaled: Retain
+    whenDeleted: Delete
+    whenScaled: Delete
   selector:
     matchLabels:
       app.kubernetes.io/name: grafana-loki-ingester
