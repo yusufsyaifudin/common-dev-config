@@ -7,5 +7,4 @@ commonLabels:
 
 resources:
   - service.yaml
-  - volume-claim.yaml
   - statefulset.yaml

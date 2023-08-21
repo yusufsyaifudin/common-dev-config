@@ -44,7 +44,7 @@ services:
     container_name: loki-query-frontend
     user: "10001:10001"
     volumes:
-      - ./config/loki/loki-frontend.yaml:/etc/loki/loki.yaml:ro
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
     command: "-config.file=/etc/loki/loki.yaml -target=query-frontend"
 
   # assume stateless, because in this example it uses Keda and using Deployment instead StatefulSet
@@ -72,6 +72,7 @@ services:
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./docker-data/loki-index-gateway/data:/data
     command: "-config.file=/etc/loki/loki.yaml -target=index-gateway"
 
   loki-ruler:

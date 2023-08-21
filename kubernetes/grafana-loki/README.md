@@ -72,7 +72,41 @@ minikube start --memory 4096 --cpus 2 --ports=30000:30000 --kubernetes-version=v
 
 After you have the Kubernetes cluster ready, then follow these step.
 
-## Running Minio
+> Note:
+> `k` is an alias of `kubectl`
+
+## Deploy Minio
 
 You can skip this if you want to use AWS S3 or any object storage.
 
+```shell
+k create ns minio
+k -n minio apply -k manifest/minio/
+```
+
+Then to access from Minikube:
+
+```shell
+minikube service minio -n minio --url
+```
+
+## Deploy Grafana Dashboard
+
+```shell
+k create ns grafana
+k -n grafana apply -k manifest/grafana/
+```
+
+Then access with:
+
+```shell
+minikube service grafana -n grafana --url
+```
+
+- Compactor
+- Index gateway
+- Distributor
+- Ingester
+- Query scheduler
+- Querier
+- Query Frontend

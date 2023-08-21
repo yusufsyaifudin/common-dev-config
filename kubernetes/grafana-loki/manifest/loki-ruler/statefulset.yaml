@@ -32,7 +32,7 @@ spec:
       app.kubernetes.io/part-of: grafana-loki
   template:
     metadata:
-      name: loki-index-gateway
+      name: loki-ruler
       labels:
         app.kubernetes.io/name: grafana-loki-ruler
         app.kubernetes.io/part-of: grafana-loki
@@ -42,8 +42,9 @@ spec:
         runAsNonRoot: true
         runAsGroup: 10001
         runAsUser: 10001
+        fsGroup: 10001
       containers:
-        - name: index-gateway
+        - name: ruler
           image: grafana/loki:2.8.3
           imagePullPolicy: Always
           args:

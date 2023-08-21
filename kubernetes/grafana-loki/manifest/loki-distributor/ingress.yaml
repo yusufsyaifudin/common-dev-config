@@ -9,7 +9,7 @@ metadata:
     kubernetes.io/ingress.class: ambassador
 spec:
   rules:
-    - host: loki-distributor.mekari.io
+    - host: loki-distributor.domain.com
       http:
         paths:
           - backend:

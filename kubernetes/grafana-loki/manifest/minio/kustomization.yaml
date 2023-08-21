@@ -8,6 +8,6 @@ commonLabels:
 resources:
   - configmap.yaml
   - volume-claim.yaml
-  - statefulset.yaml
+  - deployment.yaml
   - service.yaml
   - ingress.yaml

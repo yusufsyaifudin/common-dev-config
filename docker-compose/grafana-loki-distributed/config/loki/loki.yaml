@@ -166,6 +166,34 @@ compactor:
   shared_store: s3
   compaction_interval: 5m
 
+## ===== CONFIG FOR TABLE MANAGER ONLY
 table_manager:
   retention_deletes_enabled: true
   retention_period: 8760h # 1year = 8760h
+
+
+## ===== CONFIG FOR FRONT-END ONLY
+query_range:
+  # make queries more cache-able by aligning them with their step intervals
+  align_queries_with_step: true
+  max_retries: 5
+  parallelise_shardable_queries: true
+  cache_results: true
+  results_cache:
+    cache:
+      # We're going to use the in-process "FIFO" cache
+      enable_fifocache: true
+      fifocache:
+        size: 1024
+        validity: 24h
+
+frontend:
+  log_queries_longer_than: 5s
+  compress_responses: true
+  max_outstanding_per_tenant: 2048
+  scheduler_address: loki-query-scheduler:9095
+  downstream_url: http://loki-querier:3100
+  tail_proxy_url: http://loki-querier:3100
+
+frontend_worker:
+  frontend_address: loki-query-frontend:9095

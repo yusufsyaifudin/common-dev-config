@@ -6,6 +6,5 @@ commonLabels:
   app.kubernetes.io/component: kustomizer
 
 resources:
-  - volume-claim.yaml
   - statefulset.yaml
   - service.yaml
