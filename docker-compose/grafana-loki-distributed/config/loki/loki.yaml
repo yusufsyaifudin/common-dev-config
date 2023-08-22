@@ -59,7 +59,7 @@ memberlist:
 schema_config:
   configs:
     - from: 2020-05-15
-      store: boltdb-shipper
+      store: tsdb
       object_store: s3
       schema: v12
       index:
@@ -183,6 +183,8 @@ compactor:
   compaction_interval: 5m
 
 ## ===== CONFIG FOR TABLE MANAGER ONLY
+# Doesn't need to enable table manager, delete policy should be done in S3
+# https://github.com/grafana/loki/blob/v2.8.3/docs/sources/operations/storage/table-manager/_index.md?plain=1#L37-L39
 table_manager:
   retention_deletes_enabled: false
   retention_period: 8760h # 1year = 8760h

@@ -104,15 +104,6 @@ services:
       - ./docker-data/loki-compactor/data:/data # see compactor.working_directory
     command: "-config.file=/etc/loki/loki.yaml -target=compactor"
 
-  loki-table-manager:
-    image: grafana/loki:2.8.4
-    container_name: loki-table-manager
-    user: "10001:10001"
-    volumes:
-      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
-      - ./config/loki/runtime.yaml:/var/loki-runtime/runtime.yaml:ro
-    command: "-config.file=/etc/loki/loki.yaml -target=table-manager"
-
   minio:
     image: minio/minio:RELEASE.2023-07-18T17-49-40Z
     container_name: minio
