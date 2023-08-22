@@ -18,80 +18,100 @@ services:
       - loki-query-frontend
 
   loki-ingester: # stateful
-    image: grafana/loki:2.8.3
+    image: grafana/loki:2.8.4
     container_name: loki-ingester
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./config/loki/runtime.yaml:/var/loki-runtime/runtime.yaml:ro
       - ./docker-data/loki-ingester/data:/data # see common.path_prefix, ingester.wal.dir, storage_config.tsdb_shipper.active_index_directory
     command: "-config.file=/etc/loki/loki.yaml -target=ingester"
     depends_on:
       - minio
 
   loki-distributor: # stateless
-    image: grafana/loki:2.8.3
+    image: grafana/loki:2.8.4
     container_name: loki-distributor
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./config/loki/runtime.yaml:/var/loki-runtime/runtime.yaml:ro
     ports:
       - "3100:3100"
       - "7946:7946"
     command: "-config.file=/etc/loki/loki.yaml -target=distributor"
 
   loki-query-frontend: # stateless
-    image: grafana/loki:2.8.3
+    image: grafana/loki:2.8.4
     container_name: loki-query-frontend
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./config/loki/runtime.yaml:/var/loki-runtime/runtime.yaml:ro
     command: "-config.file=/etc/loki/loki.yaml -target=query-frontend"
 
   # assume stateless, because in this example it uses Keda and using Deployment instead StatefulSet
   # https://github.com/grafana/loki/blob/v2.8.3/docs/sources/operations/autoscaling_queriers.md?plain=1#L109
   # So
   loki-query-scheduler: # stateless
-    image: grafana/loki:2.8.3
+    image: grafana/loki:2.8.4
     container_name: loki-query-scheduler
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./config/loki/runtime.yaml:/var/loki-runtime/runtime.yaml:ro
     command: "-config.file=/etc/loki/loki.yaml -target=query-scheduler"
 
   loki-querier:
-    image: grafana/loki:2.8.3
+    image: grafana/loki:2.8.4
     container_name: loki-querier
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./config/loki/runtime.yaml:/var/loki-runtime/runtime.yaml:ro
+      - ./docker-data/loki-querier/data:/data # see common.path_prefix
     command: "-config.file=/etc/loki/loki.yaml -target=querier"
+    depends_on:
+      - minio
 
   loki-index-gateway:
-    image: grafana/loki:2.8.3
+    image: grafana/loki:2.8.4
     container_name: loki-index-gateway
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./config/loki/runtime.yaml:/var/loki-runtime/runtime.yaml:ro
       - ./docker-data/loki-index-gateway/data:/data
     command: "-config.file=/etc/loki/loki.yaml -target=index-gateway"
 
   loki-ruler:
-    image: grafana/loki:2.8.3
+    image: grafana/loki:2.8.4
     container_name: loki-ruler
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./config/loki/runtime.yaml:/var/loki-runtime/runtime.yaml:ro
       - ./docker-data/loki-ruler/data:/data # see common.path_prefix, ruler.wal.dir, ruler.storage.local.directory
     command: "-config.file=/etc/loki/loki.yaml -target=ruler"
 
   loki-compactor:
-    image: grafana/loki:2.8.3
+    image: grafana/loki:2.8.4
     container_name: loki-compactor
     user: "10001:10001"
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./config/loki/runtime.yaml:/var/loki-runtime/runtime.yaml:ro
       - ./docker-data/loki-compactor/data:/data # see compactor.working_directory
     command: "-config.file=/etc/loki/loki.yaml -target=compactor"
+
+  loki-table-manager:
+    image: grafana/loki:2.8.4
+    container_name: loki-table-manager
+    user: "10001:10001"
+    volumes:
+      - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ./config/loki/runtime.yaml:/var/loki-runtime/runtime.yaml:ro
+    command: "-config.file=/etc/loki/loki.yaml -target=table-manager"
 
   minio:
     image: minio/minio:RELEASE.2023-07-18T17-49-40Z

@@ -16,6 +16,15 @@ server:
   grpc_listen_port: 9095
   log_level: debug
 
+tracing:
+  enabled: true
+
+analytics:
+  reporting_enabled: false
+
+runtime_config:
+  file: /var/loki-runtime/runtime.yaml
+
 # Common configuration to be shared between multiple modules.
 # If a more specific configuration is given in other sections,
 # the related configuration within this section will be ignored.
@@ -50,7 +59,7 @@ memberlist:
 schema_config:
   configs:
     - from: 2020-05-15
-      store: tsdb
+      store: boltdb-shipper
       object_store: s3
       schema: v12
       index:
@@ -59,11 +68,12 @@ schema_config:
 
 storage_config:
   tsdb_shipper:
-    active_index_directory: /data/tsdb/index
-    cache_location: /data/tsdb/index_cache
+    active_index_directory: /data/index_active
+    cache_location: /data/index_cache
     shared_store: s3
     index_gateway_client:
       server_address: loki-index-gateway:9095
+      log_gateway_requests: true
 
   aws:
     s3: http://minioadmin:minioadmin@minio.:9000/loki
@@ -72,6 +82,12 @@ storage_config:
     bucketnames: loki-data
     access_key_id: "minio-access-key"
     secret_access_key: "minio-secret-key"
+
+  index_queries_cache_config:
+    embedded_cache:
+      enabled: true
+      max_size_mb: 100
+      ttl: 24h
 
 ## ===== CONFIG FOR WRITE NODES ONLY
 
@@ -99,7 +115,7 @@ ingester:
 
   # How long chunks should be retained in-memory after they've been flushed.
   chunk_retain_period: 30s
-  chunk_encoding: gzip # none, gzip, lz4-64k, snappy, lz4-256k, lz4-1M, lz4, flate, zstd. Default: gzip
+  chunk_encoding: snappy # none, gzip, lz4-64k, snappy, lz4-256k, lz4-1M, lz4, flate, zstd. Default: gzip
 
   # A target _compressed_ size in bytes for chunks. This is a desired size not an
   # exact size, chunks may be slightly bigger or significantly smaller if they get
@@ -168,7 +184,7 @@ compactor:
 
 ## ===== CONFIG FOR TABLE MANAGER ONLY
 table_manager:
-  retention_deletes_enabled: true
+  retention_deletes_enabled: false
   retention_period: 8760h # 1year = 8760h
 
 
@@ -180,12 +196,12 @@ query_range:
   parallelise_shardable_queries: true
   cache_results: true
   results_cache:
+    compression: snappy
     cache:
-      # We're going to use the in-process "FIFO" cache
-      enable_fifocache: true
-      fifocache:
-        size: 1024
-        validity: 24h
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+        ttl: 24h
 
 frontend:
   log_queries_longer_than: 5s
@@ -196,4 +212,4 @@ frontend:
   tail_proxy_url: http://loki-querier:3100
 
 frontend_worker:
-  frontend_address: loki-query-frontend:9095
+  scheduler_address: loki-query-scheduler:9095

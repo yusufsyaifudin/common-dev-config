@@ -1,0 +1,3 @@
+overrides:
+  company1:
+    query_timeout: 10m
