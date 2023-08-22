@@ -68,8 +68,8 @@ schema_config:
 
 storage_config:
   tsdb_shipper:
-    active_index_directory: /data/index_active
-    cache_location: /data/index_cache
+    active_index_directory: /data/tsdb/index_active
+    cache_location: /data/tsdb/index_cache
     shared_store: s3
     index_gateway_client:
       server_address: loki-index-gateway:9095
