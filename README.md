@@ -38,3 +38,7 @@ If you copy the folder (or cherry-picking files), ensure that you:
   For example, `jaeger-all-in-one.yaml` has `container_name: jaeger`, change it by adding your service name as prefix or suffix, 
   i.e: your service name `foo` then change it to `foo_jaeger` or `jaeger_foo` as container name.
 
+
+
+
+This repo is for development only
