@@ -24,7 +24,7 @@ By default, Docker Compose use `.env` file as stated here https://docs.docker.co
 
 ## Known Constraint
 
-Please be aware that this repository is intended for development purposes only. When copying a folder, such as docker-compose/kafka, and running it with the same command docker compose -f kafka.yaml, it may fail. This is because the container_name is hard-coded in each YAML file. This hard-coding has its advantages, as it allows you to refer to the container by a simple name.
+Please be aware that this repository is intended for development purposes only. When copying a folder, such as `docker-compose/kafka`, and running it with the same command `docker compose -f kafka.yaml`, it may fail. This is because the container_name is hard-coded in each YAML file. This hard-coding has its advantages, as it allows you to refer to the container by a simple name.
 
 If you decide to copy a folder (or cherry-pick files), make sure you do the following:
 
