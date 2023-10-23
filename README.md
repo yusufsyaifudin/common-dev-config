@@ -35,4 +35,8 @@ If you copy the folder (or cherry-picking files), ensure that you:
 * also copy the `.env` file, for example `jaeger.yaml` has `jaeger.env` to set the env variable
 * change the `container_name` in the docker compose YAML file to ensure that it won't collides with the default name.
   For example, `jaeger-all-in-one.yaml` has `container_name: jaeger`, change it by adding your service name as prefix or suffix, 
+
   i.e: your service name `foo` then change it to `foo_jaeger` or `jaeger_foo` as container name.
+
+
+This repository is a valuable tool for streamlining the development process, making your life as a developer easier.
