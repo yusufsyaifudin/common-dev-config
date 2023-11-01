@@ -1,0 +1,22 @@
+# MY_IP=$(ipconfig getifaddr en0) docker compose -f wurstmeister.yaml up -d
+
+version: '3'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    platform: "linux/amd64"
+    ports:
+      - "2181:2181"
+    restart: unless-stopped
+
+  kafka:
+    image: wurstmeister/kafka
+    platform: "linux/amd64"
+    ports:
+      - "9092:9092"
+    environment:
+      # see https://github.com/wurstmeister/kafka-docker
+      KAFKA_ADVERTISED_HOST_NAME: $HOST_IP # ipconfig getifaddr en0
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "histories:5:1:compact" # 5 partitions, 1 replicas, cleanup.policy compact
+    restart: unless-stopped

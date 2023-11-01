@@ -1,0 +1,33 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: loki-reader-load-testing
+spec:
+  parallelism: 1
+  separate: false
+  script:
+    configMap:
+      name: loki-load-test-file
+      file: reader.js
+  arguments: -o output-statsd -o json=reader_1.json --console-output /home/k6/reader_1.log --env LOKI_URL=https://load-test-attempt-1@grafana-loki-gateway.domain.io --env K6_STATSD_ADDR=datadog.datadog:8125 --env K6_STATSD_ENABLE_TAGS=true --env K6_DEBUG_SOURCEMAP_FILESIZE_LIMIT=524288
+  runner:
+    image: yusufs/k6:12ba135193ecb17f37d043262f2f145d5b9cf641
+    securityContext:
+      runAsUser: 12345
+      runAsGroup: 12345
+      runAsNonRoot: true
+      fsGroup: 12345
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+      requests:
+        cpu: 1000m
+        memory: 1Gi
+    volumeMounts:
+      - name: home-dir
+        mountPath: "/home/k6"
+    volumes:
+      - name: home-dir
+        persistentVolumeClaim:
+          claimName: result-storage

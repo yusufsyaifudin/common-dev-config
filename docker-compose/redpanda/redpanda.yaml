@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   redpanda:
-    image: redpandadata/redpanda:v22.3.13
+    image: redpandadata/redpanda:v23.2.11
     container_name: redpanda
     command:
       - redpanda start
@@ -22,10 +22,10 @@ services:
       - ./docker-data/redpanda:/var/lib/redpanda/data
 
   kafkaui:
-    # version https://github.com/provectus/kafka-ui/tree/v0.4.0
+    # version https://github.com/provectus/kafka-ui/tree/v0.7.1
     # see OpenAPI Doc here:
-    # https://github.com/provectus/kafka-ui/blob/v0.4.0/kafka-ui-contract/src/main/resources/swagger/kafka-ui-api.yaml
-    image: provectuslabs/kafka-ui:521ba0cb2f63110eb2ed13a7054a4d70238a862a
+    # https://github.com/provectus/kafka-ui/blob/v0.7.1/kafka-ui-contract/src/main/resources/swagger/kafka-ui-api.yaml
+    image: provectuslabs/kafka-ui:53a6553765a806eda9905c43bfcfe09da6812035
     container_name: kafkaui
     ports:
       - "8080:8080"
