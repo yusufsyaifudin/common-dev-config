@@ -143,7 +143,7 @@ const client = new loki.Client(conf);
 
 /**
  * Entrypoint for write scenario.
- * This will push log about 5 Mbps up to 7 Mbps with 8 - 10 streams per batch.
+ * This will push log about 5 Mbps up to 7 Mbps with 4 - 8 streams per batch.
  * minSize kb * request per second = bytes per second = 50 KB * 100 rps = 5000 KB/s = 5 MB/s
  * maxSize kb * request per second = bytes per second = 70 KB * 100 rps = 7000 KB/s = 7 MB/s
  *
@@ -155,7 +155,7 @@ const client = new loki.Client(conf);
  * In other words, we don't need to increase this number for load testing.
  */
 export function write() {
-    let streams = randomInt(8, 10); // The amount of streams the pushed batch should contain.
+    let streams = randomInt(4, 8); // The amount of streams the pushed batch should contain. Like in the example https://github.com/grafana/xk6-loki/blob/12ba135193ecb17f37d043262f2f145d5b9cf641/examples/write-scenario.js#L81
     let minSize = parseInt((50 * KB).toString());
     let maxSize = parseInt((70 * KB).toString());
     let res = client.pushParameterized(streams, minSize, maxSize);
