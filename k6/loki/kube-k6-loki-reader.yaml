@@ -9,7 +9,7 @@ spec:
     configMap:
       name: loki-load-test-file
       file: reader.js
-  arguments: -o output-statsd -o json=reader_1.json --console-output /home/k6/reader_1.log --env LOKI_URL=https://load-test-attempt-1@grafana-loki-gateway.domain.io --env K6_STATSD_ADDR=datadog.datadog:8125 --env K6_STATSD_ENABLE_TAGS=true --env K6_DEBUG_SOURCEMAP_FILESIZE_LIMIT=524288
+  arguments: -o json=reader_6.json --console-output /home/k6/reader_6.log --env LOKI_URL=https://load-test-attempt-3@grafana-loki-gateway.domain.io
   runner:
     image: yusufs/k6:12ba135193ecb17f37d043262f2f145d5b9cf641
     securityContext:

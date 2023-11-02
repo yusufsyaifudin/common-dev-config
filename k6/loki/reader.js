@@ -32,7 +32,7 @@ const LOKI_URL = __ENV.LOKI_URL || fail("provide LOKI_URL when starting k6");
  * This should be less than http_server_read_timeout https://github.com/grafana/loki/blob/v2.9.1/docs/sources/configure/_index.md?plain=1#L315
  * @type {number}
  */
-const timeout = parseInt('60000');  // 60000ms = 60s
+const timeout = parseInt('60000');  // 60000 ms = 60s
 
 /**
  * The ratio between JSON and Protobuf encoded batch requests for pushing logs.
@@ -140,7 +140,7 @@ export const options = {
         ],
     },
     scenarios: {
-        read: {
+        constant_read: {
             executor: 'constant-arrival-rate',
             exec: 'read',
             rate: 100,

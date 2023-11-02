@@ -131,7 +131,7 @@ export const options = {
             exec: 'write',
             rate: 100,
             timeUnit: '1s', // 100 request (rate) per second
-            duration: '2m',
+            duration: '30m',
             preAllocatedVUs: 500,
             maxVUs: 500,
         },
@@ -143,9 +143,13 @@ const client = new loki.Client(conf);
 
 /**
  * Entrypoint for write scenario.
- * This will push log about 5 Mbps up to 7 Mbps with 4 - 8 streams per batch.
- * minSize kb * request per second = bytes per second = 50 KB * 100 rps = 5000 KB/s = 5 MB/s
- * maxSize kb * request per second = bytes per second = 70 KB * 100 rps = 7000 KB/s = 7 MB/s
+ * This will push log about 1 Mbps up to 2 Mbps with 80 - 100 streams per batch.
+ *
+ * This means that we will have 4 * 100 up to 8 * 100; 400 up to 800 streams created per second.
+ * Loki ingester may buffer this streams into memory, hence causing loki_ingester_streams_created metric has slightly higher values.
+ *
+ * minSize kb * request per second = bytes per second = 10 KB * 100 rps = 1000 KB/s = 1 MB/s
+ * maxSize kb * request per second = bytes per second = 20 KB * 100 rps = 2000 KB/s = 2 MB/s
  *
  * In Promtail, maximum default batch size is 1MB and batch wait is 1s.
  * So, even if we don't have 1MB full in 1s, it will be pushed by Promtail to Loki, and if we have more than 1MB per second,
@@ -156,8 +160,8 @@ const client = new loki.Client(conf);
  */
 export function write() {
     let streams = randomInt(4, 8); // The amount of streams the pushed batch should contain. Like in the example https://github.com/grafana/xk6-loki/blob/12ba135193ecb17f37d043262f2f145d5b9cf641/examples/write-scenario.js#L81
-    let minSize = parseInt((50 * KB).toString());
-    let maxSize = parseInt((70 * KB).toString());
+    let minSize = parseInt((10 * KB).toString());
+    let maxSize = parseInt((20 * KB).toString());
     let res = client.pushParameterized(streams, minSize, maxSize);
     check(res,
         {
