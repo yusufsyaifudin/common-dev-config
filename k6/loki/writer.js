@@ -143,7 +143,7 @@ const client = new loki.Client(conf);
 
 /**
  * Entrypoint for write scenario.
- * This will push log about 1 Mbps up to 2 Mbps with 80 - 100 streams per batch.
+ * This will push log about 1 Mbps up to 2 Mbps with 4 - 8 streams per batch.
  *
  * This means that we will have 4 * 100 up to 8 * 100; 400 up to 800 streams created per second.
  * Loki ingester may buffer this streams into memory, hence causing loki_ingester_streams_created metric has slightly higher values.
