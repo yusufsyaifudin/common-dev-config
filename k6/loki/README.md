@@ -1,8 +1,7 @@
 # Grafana Loki Load Testing
 
 ```shell
-LOKI_URL=http://local-yusuf@localhost:3100 ./k6 run -o json="writer.json" writer.js
-LOKI_URL=http://local-yusuf@localhost:3100 ./k6 run -o json="reader.log" reader.js
+LOKI_URL=http://localhost:3100 ./k6 run -o json="reader.log" reader.js
 ```
 
 
@@ -40,20 +39,19 @@ kubectl -n k6 apply -f kube-pvc.yaml
 **Create ConfigMap**
 
 ```shell
-kubectl -n k6 create configmap loki-load-test-file --from-file writer.js --from-file reader.js
+kubectl -n k6 create configmap loki-reader --from-file reader.js
 ```
 
 To delete previous ConfigMap:
 
 ```shell
-kubectl -n k6 delete configmap loki-load-test-file
+kubectl -n k6 delete configmap loki-reader
 ```
 
 **Run Test**
 
 ```shell
 kubectl -n k6 apply -f kube-k6-loki-reader.yaml
-kubectl -n k6 apply -f kube-k6-loki-writer.yaml
 ```
 
 
@@ -61,6 +59,5 @@ When finished, delete:
 
 ```shell
 kubectl -n k6 delete -f kube-k6-loki-reader.yaml
-kubectl -n k6 delete -f kube-k6-loki-writer.yaml
 ```
 

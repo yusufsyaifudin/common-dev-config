@@ -1,0 +1,19 @@
+version: '3.9'
+services:
+  datadog:
+    image: docker.io/datadog/dogstatsd:7.49.0
+    container_name: dd-agent
+    restart: on-failure
+    pid: host
+    ports:
+      - "8125:8125/udp"
+    environment:
+      DD_API_KEY: xxx
+      DD_SITE: datadoghq.com
+      DD_LOGS_ENABLED: true
+      DD_DOGSTATSD_NON_LOCAL_TRAFFIC: true
+      DD_USE_DOGSTATSD: true
+      DD_HOSTNAME: localhost
+    volumes:
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup:/host/sys/fs/cgroup:ro

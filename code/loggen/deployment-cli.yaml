@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: writer-log-2hour
+  labels:
+    app: writer-log-2hour
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: writer-log-2hour
+  template:
+    metadata:
+      labels:
+        app: writer-log-2hour
+    spec:
+      containers:
+        - name: log-gen
+          image: yusufs/loggen:latest
+          command:
+            - /app/log-generator
+            - --start-time
+            - 2023-11-08T08:00:00+07:00
+            - --end-time
+            - 2023-11-08T10:00:00+07:00
+            - --max-byte-per-second
+            - 1mb
+            - --metric-prefix
+            - loggentest
+            - --statsd-address
+            - datadog.datadog.svc:8125
+            - --redis-address
+            - redis-service.app-engprod:6379
+            - --trace-id
+            - writer-log-2hour
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 1000Mi
+            requests:
+              cpu: 500m
+              memory: 500Mi

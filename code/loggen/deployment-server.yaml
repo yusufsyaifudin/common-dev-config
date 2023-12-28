@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-generator-deployment-server
+  labels:
+    app: log-generator-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-generator-server
+  template:
+    metadata:
+      labels:
+        app: log-generator-server
+    spec:
+      containers:
+        - name: log-gen
+          image: yusufs/loggen:latest
+          command:
+            - /app/log-generator-server
+          env:
+            - name: PORT
+              value: "4000"
+            - name: REDIS_ADDRESS
+              value: "redis-service.app-engprod:6379"
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1000Mi
+            requests:
+              cpu: 500m
+              memory: 500Mi
